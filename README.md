@@ -30,11 +30,11 @@
 
 ## Screenshots
 
-![Screenshot](https://github.com/DiHLoS/Boiler_Thermex/blob/master/images/Screenshot_2019-03-11-08-22-25-502_com.ravendmaster.linearmqttdashboard.png)
+![Screenshot](https://github.com/DiHLoS/Boiler_Thermex/blob/master/images/Screenshot_1.png)
 
-![Screenshot](https://github.com/DiHLoS/Boiler_Thermex/blob/master/images/Screenshot_2019-03-20-17-54-52-389_snr.lab.iotmqttpanel.prod.png)
+![Screenshot](https://github.com/DiHLoS/Boiler_Thermex/blob/master/images/Screenshot_2.png)
 
-![Screenshot](https://github.com/DiHLoS/Boiler_Thermex/blob/master/images/Screenshot_2019-03-20-17-55-05-129_snr.lab.iotmqttpanel.prod.png)
+![Screenshot](https://github.com/DiHLoS/Boiler_Thermex/blob/master/images/Screenshot_3.png)
 ***
 
 

@@ -30,11 +30,8 @@
 
 ## Screenshots
 
-![Screenshot](https://github.com/DiHLoS/Boiler_Thermex/blob/master/images/Screenshot_1.png)
-
-![Screenshot](https://github.com/DiHLoS/Boiler_Thermex/blob/master/images/Screenshot_2.png)
-
-![Screenshot](https://github.com/DiHLoS/Boiler_Thermex/blob/master/images/Screenshot_3.png)
+| ![Screenshot](https://github.com/DiHLoS/Boiler_Thermex/blob/master/images/Screenshot_1.png) | ![Screenshot](https://github.com/DiHLoS/Boiler_Thermex/blob/master/images/Screenshot_2.png) | ![Screenshot](https://github.com/DiHLoS/Boiler_Thermex/blob/master/images/Screenshot_3.png) |
+|---|---|---|
 ***
 
 

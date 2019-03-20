@@ -4,7 +4,7 @@
 [Страница проекта](http://blog.instalator.ru/archives/681)
 
 ![Водонагреватель Thermex IF 50 V](http://blog.instalator.ru/wp-content/uploads/2017/05/thermex_new1-672x372.jpg)
-
+***
 
 Плата контроллера бойлера (вид сверху)
 
@@ -13,6 +13,7 @@
 Плата контроллера бойлера (вид сзади)
 
 ![Плата контроллера](https://github.com/DiHLoS/Boiler_Thermex/blob/master/images/Thermex_MainBoard.jpg)
+***
 
 Схема контроллера бойлера
 
@@ -25,8 +26,7 @@
 Плата контроллера бойлера (вид сзади) - точки подключения
 
 ![Плата контроллера](https://github.com/DiHLoS/Boiler_Thermex/blob/master/images/Thermex_MainBoard.png)
-
-
+***
 
 ## Screenshots
 
@@ -35,7 +35,7 @@
 ![Screenshot](https://github.com/DiHLoS/Boiler_Thermex/blob/master/images/Screenshot_2019-03-20-17-54-52-389_snr.lab.iotmqttpanel.prod.png)
 
 ![Screenshot](https://github.com/DiHLoS/Boiler_Thermex/blob/master/images/Screenshot_2019-03-20-17-55-05-129_snr.lab.iotmqttpanel.prod.png)
-
+***
 
 ## Changelog
 

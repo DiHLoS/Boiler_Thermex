@@ -3,6 +3,10 @@
 #define SIZEBUFF 40
 #define MAXBUFF  20
 
+#define BUTTON_ON_OFF 4
+#define BUTTON_POWER_SELECTOR 5
+#define BUTTON_TEMP_SELECTOR 6
+
 byte data;
 int strob;
 int ArrayStrob[SIZEBUFF];
@@ -12,18 +16,23 @@ int arrayind1[MAXBUFF];
 int arrayind2[MAXBUFF];
 int arrayind3[MAXBUFF];
 //int pretemp = 99;
-int Temperature = 0;
-int temp = 0;
-int temp1 = 0;
-int temp2 = 0;
+int tmp = 0;
+int tmp1 = 0;
+int tmp2 = 0;
 int ind1 = 0;
 int ind2 = 0;
 int ind3 = 0;
-int power = 0;
-int SetT;
-bool flagSetTemp = false;
+int powerState = 0;
+int currTemperature = 0;
+int newTemperature;
+bool isTempSetNow = false;
 int count = 0;
-//////////////////////////////////////////////////////////////////////
+
+
+
+//-----------------------------------------------------------------------------------------
+// Начальные установки
+//-----------------------------------------------------------------------------------------
 void setup() {
   wdt_enable(WDTO_4S);
   Serial.begin(19200);
@@ -32,63 +41,73 @@ void setup() {
   DDRB &= ~_BV(0);
   DDRD &= ~_BV(2);
   DDRD &= ~_BV(3);
-  pinMode(4, OUTPUT);
-  pinMode(5, OUTPUT);
-  pinMode(6, OUTPUT);
-  digitalWrite(4, 1);
-  digitalWrite(5, 1);
-  digitalWrite(6, 1);
+  pinMode(BUTTON_ON_OFF, OUTPUT);
+  pinMode(BUTTON_POWER_SELECTOR, OUTPUT);
+  pinMode(BUTTON_TEMP_SELECTOR, OUTPUT);
+  digitalWrite(BUTTON_ON_OFF, HIGH);
+  digitalWrite(BUTTON_POWER_SELECTOR, HIGH);
+  digitalWrite(BUTTON_TEMP_SELECTOR, HIGH);
 }
-/////////////////////////////////////////////////////////////////////
+
+
+
+//-----------------------------------------------------------------------------------------
+// Повторяем по кругу
+//-----------------------------------------------------------------------------------------
 void loop() {
   wdt_reset();
-  Buffer();
-  Button();
-  if (flagSetTemp && count < 20){
+  getDataFromPanel();
+  getCommandFromESP();
+  if (isTempSetNow && count < 20){
     count++;
-    setTemp(SetT);
+    setTemperature(newTemperature);
   } else {
-    flagSetTemp = false;
+    isTempSetNow = false;
     count = 0;
   }
 }
 
-void Buffer() {
+
+
+//-----------------------------------------------------------------------------------------
+// Получаем данные с панели(микроконтроллера) бойлера Thermex IF50V
+//-----------------------------------------------------------------------------------------
+void getDataFromPanel() {
   for (int m = 0; m < MAXBUFF; m++) {
     for (int i = 0; i < SIZEBUFF; i++) {
       ArrayStrob[i] = (PIND & (1 << PD2));
       ArrayData[i] = PINC;
       ArrayData[i] = (ArrayData[i] << 2) | (PINB & (1 << PB0));
       delay(1);
-      Button();
+      getCommandFromESP();
       //Serial.println(ArrayData[i]);
     }
     for (int x = 0; x < SIZEBUFF - 1; x++) {
       int tempbuf = ArrayData[x];
       strob = ArrayStrob[x];
-      Button();
-           if (tempbuf == 144 && strob) {temp1 = 0;}
-      else if (tempbuf == 64  && strob) {temp1 = 0;}
-      else if (tempbuf == 121 && strob) {temp1 = 1;}
-      else if (tempbuf == 136 && strob) {temp1 = 2;}
-      else if (tempbuf == 40  && strob) {temp1 = 3;}
-      else if (tempbuf == 49  && strob) {temp1 = 4;}
-      else if (tempbuf == 36  && strob) {temp1 = 5;}
-      else if (tempbuf == 4   && strob) {temp1 = 6;}
-      else if (tempbuf == 120 && strob) {temp1 = 7;}
-      else if (tempbuf == 0   && strob) {temp1 = 8;}
-      else if (tempbuf == 32  && strob) {temp1 = 9;}
-      else if (tempbuf == 132) {temp1 = 9;}
-      else if (tempbuf == 64  && !strob) {temp2 = 0;}
-      else if (tempbuf == 121 && !strob) {temp2 = 1;}
-      else if (tempbuf == 136 && !strob) {temp2 = 2;}
-      else if (tempbuf == 40  && !strob) {temp2 = 3;}
-      else if (tempbuf == 49  && !strob) {temp2 = 4;}
-      else if (tempbuf == 36  && !strob) {temp2 = 5;}
-      else if (tempbuf == 4   && !strob) {temp2 = 6;}
-      else if (tempbuf == 120 && !strob) {temp2 = 7;}
-      else if (tempbuf == 0   && !strob) {temp2 = 8;}
-      else if (tempbuf == 32  && !strob) {temp2 = 9;}
+      getCommandFromESP();
+      if (tempbuf == 144 && strob) {tmp1 = 0;}
+      else if (tempbuf == 64  && strob) {tmp1 = 0;}
+      else if (tempbuf == 121 && strob) {tmp1 = 1;}
+      else if (tempbuf == 136 && strob) {tmp1 = 2;}
+      else if (tempbuf == 40  && strob) {tmp1 = 3;}
+      else if (tempbuf == 49  && strob) {tmp1 = 4;}
+      else if (tempbuf == 36  && strob) {tmp1 = 5;}
+      else if (tempbuf == 4   && strob) {tmp1 = 6;}
+      else if (tempbuf == 120 && strob) {tmp1 = 7;}
+      else if (tempbuf == 0   && strob) {tmp1 = 8;}
+      else if (tempbuf == 32  && strob) {tmp1 = 9;}
+      else if (tempbuf == 132) {tmp1 = 9;}
+      else if (tempbuf == 64  && !strob) {tmp2 = 0;}
+      else if (tempbuf == 121 && !strob) {tmp2 = 1;}
+      else if (tempbuf == 136 && !strob) {tmp2 = 2;}
+      else if (tempbuf == 40  && !strob) {tmp2 = 3;}
+      else if (tempbuf == 49  && !strob) {tmp2 = 4;}
+      else if (tempbuf == 36  && !strob) {tmp2 = 5;}
+      else if (tempbuf == 4   && !strob) {tmp2 = 6;}
+      else if (tempbuf == 120 && !strob) {tmp2 = 7;}
+      else if (tempbuf == 0   && !strob) {tmp2 = 8;}
+      else if (tempbuf == 32  && !strob) {tmp2 = 9;}
       else if (tempbuf == 245) {
         ind1 = 1;
         ind2 = 0;
@@ -109,25 +128,21 @@ void Buffer() {
         ind2 = 0;
         ind3 = 0;
       }
-      String Strtemp =  String(temp1) + String(temp2);
-      temp = Strtemp.toInt();
+      String Strtemp =  String(tmp1) + String(tmp2);
+      tmp = Strtemp.toInt();
     }
-    if (temp > 15) {
-      arraytemp[m] = temp;
-    }
+    if (tmp > 15) {arraytemp[m] = tmp;}
     arrayind1[m] = ind1;
     arrayind2[m] = ind2;
     arrayind3[m] = ind3;
   }
-
-  //////////////
-  int maxtemp = arraytemp[0]; // нулевой элемент будет.
+  
+  int maxtemp = arraytemp[0];
   int maxind1 = arrayind1[0];
   int maxind2 = arrayind2[0];
   int maxind3 = arrayind3[0];
   for (int mx = 1; mx < 10; mx++) {
-    Button();
-    // if (arraytemp[mx] >= maxtemp){maxtemp = arraytemp[mx];}
+    getCommandFromESP();
     if (arrayind1[mx] >= maxind1) {
       maxind1 = arrayind1[mx];
     }
@@ -138,13 +153,14 @@ void Buffer() {
       maxind3 = arrayind3[mx];
     }
   }
-
+  
   wdt_reset();
+  
   //Находим максимальные значения для отсеивания мусора
   int confidence = 0;
   int* candidate = NULL;
   for (int i = 0; i < MAXBUFF; i++) {
-    Button();
+    getCommandFromESP();
     if (confidence == 0) {
       candidate = arraytemp + i;
       confidence++;
@@ -156,56 +172,79 @@ void Buffer() {
       confidence--;
     }
   }
-
   if (confidence > 0 && candidate[1] > 15) {
     maxtemp = candidate[1];
   }
-  Temperature = maxtemp;
+  currTemperature = maxtemp;
+  
   if (maxind1 || maxind2 || maxind3){
-    power = 1;
+    powerState = 1;
   } else {
-    power = 0;
+    powerState = 0;
   }
-  Serial.print(maxtemp);
+  
+  // Отправляем в серийный порт команды для ESP
+  Serial.print(currTemperature); 	// текущая температура на индикаторе // глюки, если t < 10 oC
   Serial.print(";");
-  Serial.print(maxind1);
+  Serial.print(maxind1); 			// состояние светодиода Temperature Preservation (L2)
   Serial.print(";");
-  Serial.print(maxind2);
+  Serial.print(maxind2);			// состояние светодиода Double Power (L3)
   Serial.print(";");
-  Serial.print(maxind3);
+  Serial.print(maxind3);			// состояние светодиода Single Power (L1)
   Serial.print(";");
-  Serial.print(power);
+  Serial.print(powerState);			// состояние бойлера включен/выключен
   Serial.print(":");
 }
 
-void Button() {
+
+
+//-----------------------------------------------------------------------------------------
+// Слушаем серийный порт и получаем команды от ESP
+//-----------------------------------------------------------------------------------------
+void getCommandFromESP() {
   if (Serial.available()) {
-    if (Serial.find("cmd")) {
+    if (Serial.find((char*)"cmd")) {
       int cmd = Serial.parseInt();
       if (cmd == 1) {
-        Push(4);
+        pressButton(BUTTON_ON_OFF);
       } else if (cmd == 2) {
-        Push(5);
+        pressButton(BUTTON_POWER_SELECTOR);
       } else if (cmd == 3) {
-        Push(6);
+        pressButton(BUTTON_TEMP_SELECTOR);
       } else if (cmd == 35 || cmd == 40 || cmd == 45 || cmd == 50 || cmd == 55 || cmd == 60 || cmd == 65 || cmd == 70 || cmd == 75){
-        SetT = cmd;
-        setTemp(SetT);
+        newTemperature = cmd;
+        setTemperature(newTemperature);
       }
     }
   }
 }
-void setTemp(int t){
-  if (Temperature != t) {
-        Push(6);
+
+
+
+//-----------------------------------------------------------------------------------------
+// Установка указанной температуры (35, 40, 45, 50, 55, 60, 65, 70, 75)
+// путем нажатия кнопки Temp Selector
+//-----------------------------------------------------------------------------------------
+void setTemperature(int t){
+  if (currTemperature != t) {
+        pressButton(BUTTON_TEMP_SELECTOR);
         delay(300);
-        flagSetTemp = true;
+        isTempSetNow = true;
   } else {
-    flagSetTemp = false;
+    isTempSetNow = false;
   }
 }
 
-void Push(int b) {
+
+
+//-----------------------------------------------------------------------------------------
+// Нажатие указанной кнопки
+//
+// BUTTON_ON_OFF 4
+// BUTTON_POWER_SELECTOR 5
+// BUTTON_TEMP_SELECTOR 6
+//-----------------------------------------------------------------------------------------
+void pressButton(int b) {
   digitalWrite(b, LOW);
   delay(50);
   digitalWrite(b, HIGH);

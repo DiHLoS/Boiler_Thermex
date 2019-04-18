@@ -198,7 +198,7 @@ void parseString() {
       needRefresh = true;
       isChanged = false;
     } else {
-	  // восстановим сохраненное предыдущее (*)
+      // восстановим сохраненное предыдущее (*)
       temp_prev = temp_saved;
       prsv_prev = prsv_saved;
       dbl_prev = dbl_saved;
@@ -216,7 +216,7 @@ void parseString() {
     dbl_saved = dbl_prev;
     sngl_saved = sngl_prev;
     power_saved = power_prev;
-	  // предыдущее = текущему
+    // предыдущее = текущему
     temp_prev = temp;
     prsv_prev = prsv;
     dbl_prev = dbl;
@@ -228,12 +228,11 @@ void parseString() {
   // выставлен флаг refresh, оновляем данные на сервере MQTT
   if (needRefresh) {
     client.publish("myhome/Boiler/connection", "true");
-	  client.publish("myhome/Boiler/power", (power) ? "true" : "false");
+    client.publish("myhome/Boiler/power", (power) ? "true" : "false");
     client.publish("myhome/Boiler/temperature", String(temp).c_str());
     client.publish("myhome/Boiler/single_power", (sngl > 0) ? "true" : "false");
     client.publish("myhome/Boiler/double_power", (dbl > 0) ? "true" : "false");
     client.publish("myhome/Boiler/preservation", (prsv > 0) ? "true" : "false");
     needRefresh = false;
   }
-
 }

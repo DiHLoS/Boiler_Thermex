@@ -1,20 +1,22 @@
-
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 
+// настройки сети Wi-Fi
 const char* ssid = "...";
 const char* password = "...";
-const char* mqtt_server = "192.168.1.100"; //Сервер MQTT
+// адрес сервера MQTT и данные аутентификации
+const char* mqtt_server = "192.168.1.100"; 
 const char* MQTT_LOGIN  = "...";
 const char* MQTT_PASS   = "...";
 
-#define ID_CONNECT "Boiler_Thermex"
-#define LED     2
+#define ID_CONNECT	"Boiler_Thermex"
+#define LED     	2
 
 WiFiClient espClient;
 PubSubClient client(espClient);
+
 
 // текущие данные
 int temp = 0;
@@ -39,6 +41,9 @@ bool power_saved = false;
 bool needRefresh;
 bool isChanged = false;
 String inputString = "";
+// установленная температура (храним для случая, чтобы при реконнекте к серверу MQTT заново 
+// не выставлять температуру на бойлере, т.к. она уже установлена
+int set_temperature = 0; 
 
 
 
@@ -66,6 +71,7 @@ void setup() {
   ArduinoOTA.onEnd([]() {  });
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {  });
   ArduinoOTA.onError([](ota_error_t error) {  });
+  ArduinoOTA.setPassword("...");
   ArduinoOTA.begin();
 }
 
@@ -82,16 +88,20 @@ void loop() {
     digitalWrite(LED, !digitalRead(LED)); // в итоге выходит мигание с интервалом 5 сек при коннекте к серверу MQTT
     // Соединение с сервером MQTT публикация и подписка на данные
     if (client.connect(ID_CONNECT, MQTT_LOGIN, MQTT_PASS)) {
-      client.publish("myhome/Boiler/connection",      " ");
-      client.publish("myhome/Boiler/temperature",     " ");
-      //client.publish("myhome/Boiler/set_temperature", "");
-      //client.publish("myhome/Boiler/power",           "false");
-      client.publish("myhome/Boiler/single_power",    " ");
-      client.publish("myhome/Boiler/double_power",    " ");
-      client.publish("myhome/Boiler/preservation",    " ");
-      client.publish("myhome/Boiler/power_selector",  " ");
-      client.publish("myhome/Boiler/temp_selector",   " ");
-      client.subscribe("myhome/Boiler/#");
+      //client.publish("home/Boiler/connection",    	" ");
+      //client.publish("home/Boiler/get/temperature",	" ");
+      //client.publish("home/Boiler/set/temperature",	" ");
+      //client.publish("home/Boiler/set/power",         " ");
+      //client.publish("home/Boiler/get/power",         " ");
+      //client.publish("home/Boiler/get/single_power",	" ");
+      //client.publish("home/Boiler/get/double_power",	" ");
+      //client.publish("home/Boiler/get/preservation",	" ");
+      client.publish("home/Boiler/set/power_selector",  "false");
+      client.publish("home/Boiler/set/temp_selector",   "false");
+      
+      client.subscribe("home/Boiler/set/#");
+      client.subscribe("home/Boiler/connection");
+      
       digitalWrite(LED, LOW);
       needRefresh = true;
     } else {
@@ -125,22 +135,26 @@ void callback(char* topic, byte* payload, unsigned int length) {
   String strTopic = String(topic);
   String strPayload = String((char*)payload);
 
-  // посылаем для видимости доступности бойлера в сети
-  if (strTopic == "myhome/Boiler/connection") {
-    if (strPayload == "false") {
+  // запрос доступности бойлера в сети
+  if (strTopic == "home/Boiler/connection") {
+    if (strPayload != "true") {
       needRefresh = true;
     }
   }
 
-  if (strTopic == "myhome/Boiler/set_temperature") {
+  if (strTopic == "home/Boiler/set/temperature") {
     int t = strPayload.toInt();
-    if (t == 35 || t == 40 || t == 45 || t == 50 || t == 55 || t == 60 || t == 65 || t == 70 || t == 75) {
-      Serial.print("cmd");
-      Serial.println(t);
+    if (t != set_temperature)
+    {
+      set_temperature = t; // сохраним установленную температуру
+      if (t == 35 || t == 40 || t == 45 || t == 50 || t == 55 || t == 60 || t == 65 || t == 70 || t == 75) {
+        Serial.print("cmd");
+        Serial.println(t);
+      }
     }
   }
 
-  if (strTopic == "myhome/Boiler/power") {
+  if (strTopic == "home/Boiler/set/power") {
     if (strPayload == "true" && power == false) {
       Serial.println("cmd1");
     } else if (strPayload == "false" && power == true) {
@@ -148,18 +162,18 @@ void callback(char* topic, byte* payload, unsigned int length) {
     }
   }
 
-  if (strTopic == "myhome/Boiler/power_selector") {
+  if (strTopic == "home/Boiler/set/power_selector") {
     if (strPayload == "true") {
-      client.publish("myhome/Boiler/power_selector", "false");
+      client.publish("home/Boiler/set/power_selector", "false");
       if (power == true) {
         Serial.println("cmd2");
       }
     }
   }
 
-  if (strTopic == "myhome/Boiler/temp_selector") {
+  if (strTopic == "home/Boiler/set/temp_selector") {
     if (strPayload == "true") {
-      client.publish("myhome/Boiler/temp_selector", "false");
+      client.publish("home/Boiler/set/temp_selector", "false");
       Serial.println("cmd3");
     }
   }
@@ -203,7 +217,7 @@ void parseString() {
       prsv_prev = prsv_saved;
       dbl_prev = dbl_saved;
       sngl_prev = sngl_saved;
-      power_prev = power_saved;	
+      power_prev = power_saved; 
       isChanged = false;
     }
   }
@@ -225,14 +239,15 @@ void parseString() {
     isChanged = true;
   }
 
-  // выставлен флаг refresh, оновляем данные на сервере MQTT
+  // выставлен флаг refresh, обновляем данные на сервере MQTT
   if (needRefresh) {
-    client.publish("myhome/Boiler/connection", "true");
-    client.publish("myhome/Boiler/power", (power) ? "true" : "false");
-    client.publish("myhome/Boiler/temperature", String(temp).c_str());
-    client.publish("myhome/Boiler/single_power", (sngl > 0) ? "true" : "false");
-    client.publish("myhome/Boiler/double_power", (dbl > 0) ? "true" : "false");
-    client.publish("myhome/Boiler/preservation", (prsv > 0) ? "true" : "false");
+    client.publish("home/Boiler/connection", "true");
+    client.publish("home/Boiler/get/power", (power) ? "true" : "false");
+    client.publish("home/Boiler/get/temperature", String(temp).c_str());
+    client.publish("home/Boiler/get/single_power", (sngl > 0) ? "true" : "false");
+    client.publish("home/Boiler/get/double_power", (dbl > 0) ? "true" : "false");
+    client.publish("home/Boiler/get/preservation", (prsv > 0) ? "true" : "false");
     needRefresh = false;
   }
+
 }
